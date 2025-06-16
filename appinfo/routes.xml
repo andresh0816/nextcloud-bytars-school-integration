@@ -7,13 +7,13 @@
 			<default key="action">index</default>
 		</defaults>
 	</route>
-	<route id="bytarsschool.settings.saveSettings" url="/settings" verb="POST">
+	<route id="bytarsschool.settings.saveAdmin" url="/settings/save-admin" verb="POST">
 		<defaults>
 			<default key="controller">Settings</default>
-			<default key="action">saveSettings</default>
+			<default key="action">saveAdmin</default>
 		</defaults>
 	</route>
-	<route id="bytarsschool.settings.testConnection" url="/test-connection" verb="POST">
+	<route id="bytarsschool.settings.testConnection" url="/settings/test-connection" verb="POST">
 		<defaults>
 			<default key="controller">Settings</default>
 			<default key="action">testConnection</default>

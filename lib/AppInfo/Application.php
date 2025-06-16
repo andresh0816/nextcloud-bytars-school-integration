@@ -10,7 +10,7 @@ use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\IUserManager;
 use OCP\User\Events\BeforeUserLoggedInEvent;
 use OCP\User\Events\UserLoggedInEvent;
@@ -40,16 +40,16 @@ class Application extends App implements IBootstrap {
 		$serverContainer = $context->getServerContainer();
 		
 		// Get required services
-		$config = $serverContainer->get(IConfig::class);
+		$appConfig = $serverContainer->get(IAppConfig::class);
 		$userManager = $serverContainer->get(IUserManager::class);
 		$logger = $serverContainer->get(LoggerInterface::class);
 
 		// Check if Directus integration is configured
-		$directusUrl = $config->getAppValue(self::APP_ID, 'directus_url', '');
+		$directusUrl = $appConfig->getValueString(self::APP_ID, 'directus_url', '');
 		
 		if (!empty($directusUrl)) {
 			// Register the Directus user backend
-			$directusBackend = new DirectusUserBackend($config, $logger);
+			$directusBackend = new DirectusUserBackend($appConfig, $logger);
 			$userManager->registerBackend($directusBackend);
 			
 			$logger->info('Directus user backend registered for BytarsSchool app');

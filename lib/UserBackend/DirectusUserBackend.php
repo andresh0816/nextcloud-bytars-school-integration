@@ -7,7 +7,7 @@ namespace OCA\BytarsSchool\UserBackend;
 use Exception;
 use OCA\BytarsSchool\AppInfo\Application;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\IConfig;
+use OCP\IAppConfig;
 use OCP\ILogger;
 use OCP\User\Backend\ABackend;
 use OCP\User\Backend\ICheckPasswordBackend;
@@ -25,12 +25,11 @@ class DirectusUserBackend extends ABackend implements
 	IGetHomeBackend,
 	IProvideEnabledStateBackend {
 
-	private IConfig $config;
+	private IAppConfig $appConfig;
 	private LoggerInterface $logger;
 	private array $userCache = [];
-
-	public function __construct(IConfig $config, LoggerInterface $logger) {
-		$this->config = $config;
+	public function __construct(IAppConfig $appConfig, LoggerInterface $logger) {
+		$this->appConfig = $appConfig;
 		$this->logger = $logger;
 	}
 	/**
@@ -163,9 +162,8 @@ class DirectusUserBackend extends ABackend implements
 		}
 	}	/**
 	 * Authenticate with Directus API using email and password
-	 */
-	private function authenticateWithDirectus(string $email, string $password): bool {
-		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+	 */	private function authenticateWithDirectus(string $email, string $password): bool {
+		$directusUrl = $this->appConfig->getValueString(Application::APP_ID, 'directus_url', '');
 		
 		if (empty($directusUrl)) {
 			throw new Exception('Directus URL not configured');
@@ -227,13 +225,12 @@ class DirectusUserBackend extends ABackend implements
 	/**
 	 * Get user from Directus
 	 */
-	private function getDirectusUser(string $email): ?array {
-		if (isset($this->userCache[$email])) {
+	private function getDirectusUser(string $email): ?array {		if (isset($this->userCache[$email])) {
 			return $this->userCache[$email];
 		}
 
-		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
-		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
+		$directusUrl = $this->appConfig->getValueString(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->appConfig->getValueString(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');
@@ -273,10 +270,9 @@ class DirectusUserBackend extends ABackend implements
 	}
 	/**
 	 * Get users from Directus
-	 */
-	private function getDirectusUsers(string $search = '', ?int $limit = null, ?int $offset = null): array {
-		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
-		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
+	 */	private function getDirectusUsers(string $search = '', ?int $limit = null, ?int $offset = null): array {
+		$directusUrl = $this->appConfig->getValueString(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->appConfig->getValueString(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');
@@ -329,10 +325,9 @@ class DirectusUserBackend extends ABackend implements
 	}
 	/**
 	 * Get user count from Directus
-	 */
-	private function getDirectusUserCount(): int {
-		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
-		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
+	 */	private function getDirectusUserCount(): int {
+		$directusUrl = $this->appConfig->getValueString(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->appConfig->getValueString(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');
