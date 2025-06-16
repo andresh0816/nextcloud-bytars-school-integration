@@ -5,44 +5,39 @@ namespace OCA\BytarsSchool\Controller;
 use OCA\BytarsSchool\AppInfo\Application;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
+use OCP\IConfig;
 use OCP\IRequest;
 
 class SettingsController extends Controller {
-    private IAppConfig $appConfig;
+    private IConfig $config;
 
-    public function __construct($appName, IRequest $request, IAppConfig $appConfig) {
+    public function __construct($appName, IRequest $request, IConfig $config) {
         parent::__construct($appName, $request);
-        $this->appConfig = $appConfig;
-    }
-
-    /**
+        $this->config = $config;
+    }    /**
      * Save admin settings
      */
-    public function saveAdmin($directus_url = '', $directus_admin_token = '', $auto_provision_users = false, $default_group = ''): JSONResponse {
+    public function saveAdmin(): JSONResponse {
+        $data = $this->request->getParams();
+        
         try {
-            // Validate required fields
-            if (empty($directus_url)) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Directus URL is required'
-                ]);
+            if (isset($data['directus_url'])) {
+                $this->config->setAppValue(Application::APP_ID, 'directus_url', $data['directus_url']);
             }
             
-            if (empty($directus_admin_token)) {
-                return new JSONResponse([
-                    'success' => false,
-                    'message' => 'Admin token is required'
-                ]);
+            if (isset($data['directus_admin_token'])) {
+                $this->config->setAppValue(Application::APP_ID, 'directus_admin_token', $data['directus_admin_token']);
+            }
+            
+            if (isset($data['default_group'])) {
+                $this->config->setAppValue(Application::APP_ID, 'default_group', $data['default_group']);
             }
 
-            // Save configuration
-            $this->appConfig->setValueString(Application::APP_ID, 'directus_url', trim($directus_url, '/'));
-            $this->appConfig->setValueString(Application::APP_ID, 'directus_admin_token', $directus_admin_token);
-            $this->appConfig->setValueBool(Application::APP_ID, 'auto_provision_users', (bool)$auto_provision_users);
-            $this->appConfig->setValueString(Application::APP_ID, 'default_group', $default_group);
+            if (isset($data['auto_provision_users'])) {
+                $this->config->setAppValue(Application::APP_ID, 'auto_provision_users', $data['auto_provision_users'] ? 'true' : 'false');
+            }
 
-            return new JSONResponse(['success' => true]);
+            return new JSONResponse(['success' => true, 'message' => 'Settings saved successfully']);
         } catch (\Exception $e) {
             return new JSONResponse([
                 'success' => false,
@@ -55,8 +50,8 @@ class SettingsController extends Controller {
      * Test connection to Directus
      */
     public function testConnection(): JSONResponse {
-        $directusUrl = $this->appConfig->getValueString(Application::APP_ID, 'directus_url', '');
-        $adminToken = $this->appConfig->getValueString(Application::APP_ID, 'directus_admin_token', '');
+        $directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+        $adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
         if (empty($directusUrl) || empty($adminToken)) {
             return new JSONResponse([
