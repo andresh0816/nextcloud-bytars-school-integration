@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+	<id>bytarsschool</id>
+	<name>Bytars School</name>
+	<summary>Nextcloud integration with Bytars School</summary>
+	<description>This app allows you to integrate Bytars School with your nextcloud instance allowing you features as SSO, Files and more.</description>
+	<version>1.0.0</version>
+	<licence>agpl</licence>
+	<author mail="contact@bytars.com" homepage="https://www.bytars.com">Bytars S.A.S</author>
+	<namespace>BytarsSchool</namespace>
+	<category>integration</category>
+	<bugs>https://github.com/andresh0816/nextcloud-bytars-school-integration/issues</bugs>
+	<dependencies>
+		<nextcloud min-version="29" max-version="31"/>
+	</dependencies>
+	<navigations>
+		<navigation>
+			<id>bytarsschool</id>
+			<name>Bytars School</name>
+			<route>bytarsschool.page.index</route>
+			<icon>app.svg</icon>
+			<type>link</type>
+		</navigation>
+	</navigations>
+</info>
