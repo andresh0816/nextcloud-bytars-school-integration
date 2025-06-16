@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:noNamespaceSchemaLocation="../../../core/routes.xsd">
+	<route id="bytarsschool.page.index" url="/" verb="GET">
+		<defaults>
+			<default key="controller">Page</default>
+			<default key="action">index</default>
+		</defaults>
+	</route>
+	<route id="bytarsschool.settings.saveSettings" url="/settings" verb="POST">
+		<defaults>
+			<default key="controller">Settings</default>
+			<default key="action">saveSettings</default>
+		</defaults>
+	</route>
+	<route id="bytarsschool.settings.testConnection" url="/test-connection" verb="POST">
+		<defaults>
+			<default key="controller">Settings</default>
+			<default key="action">testConnection</default>
+		</defaults>
+	</route>
+</routes>
