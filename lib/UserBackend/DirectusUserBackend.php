@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\BytarsSchool\UserBackend;
 
 use Exception;
+use OCA\BytarsSchool\AppInfo\Application;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use OCP\ILogger;
@@ -113,14 +114,15 @@ class DirectusUserBackend extends ABackend implements
 			return [];
 		}
 	}
-
 	/**
-	 * Check password
+	 * Check password - In Directus, we authenticate with email and password
 	 */
 	public function checkPassword(string $uid, string $password): string|bool {
 		try {
+			// In Directus, authentication is done with email, so $uid should be the email
 			$authenticated = $this->authenticateWithDirectus($uid, $password);
 			if ($authenticated) {
+				// Return the email as the user ID
 				return $uid;
 			}
 		} catch (Exception $e) {
@@ -159,17 +161,23 @@ class DirectusUserBackend extends ABackend implements
 			$this->logger->error('Error checking if user is enabled in Directus: ' . $e->getMessage());
 			return false;
 		}
-	}
-
-	/**
-	 * Authenticate with Directus API
+	}	/**
+	 * Authenticate with Directus API using email and password
 	 */
 	private function authenticateWithDirectus(string $email, string $password): bool {
-		$directusUrl = $this->config->getAppValue('bytarsschool', 'directus_url', '');
+		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
 		
 		if (empty($directusUrl)) {
 			throw new Exception('Directus URL not configured');
 		}
+		
+		// Validate email format
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			$this->logger->debug('Invalid email format for authentication: ' . $email);
+			return false;
+		}
+
+		$this->logger->debug('Attempting Directus authentication for email: ' . $email);
 
 		$ch = curl_init();
 		curl_setopt_array($ch, [
@@ -180,11 +188,15 @@ class DirectusUserBackend extends ABackend implements
 				'password' => $password
 			]),
 			CURLOPT_HTTPHEADER => [
-				'Content-Type: application/json'
+				'Content-Type: application/json',
+				'Accept: application/json'
 			],
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_TIMEOUT => 30,
-			CURLOPT_SSL_VERIFYPEER => false
+			CURLOPT_CONNECTTIMEOUT => 10,
+			CURLOPT_SSL_VERIFYPEER => false,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_USERAGENT => 'Nextcloud Bytars School Integration'
 		]);
 
 		$response = curl_exec($ch);
@@ -193,17 +205,25 @@ class DirectusUserBackend extends ABackend implements
 		curl_close($ch);
 
 		if ($error) {
+			$this->logger->error('cURL error during Directus authentication: ' . $error);
 			throw new Exception('cURL error: ' . $error);
 		}
 
+		$this->logger->debug('Directus authentication response code: ' . $httpCode);
+
 		if ($httpCode === 200) {
 			$data = json_decode($response, true);
-			return isset($data['data']['access_token']);
+			$success = isset($data['data']['access_token']);
+			$this->logger->info('Directus authentication ' . ($success ? 'successful' : 'failed') . ' for email: ' . $email);
+			return $success;
+		} elseif ($httpCode === 401) {
+			$this->logger->info('Directus authentication failed - invalid credentials for email: ' . $email);
+			return false;
+		} else {
+			$this->logger->error('Directus authentication failed with HTTP code: ' . $httpCode . ' for email: ' . $email);
+			return false;
 		}
-
-		return false;
 	}
-
 	/**
 	 * Get user from Directus
 	 */
@@ -212,8 +232,8 @@ class DirectusUserBackend extends ABackend implements
 			return $this->userCache[$email];
 		}
 
-		$directusUrl = $this->config->getAppValue('bytarsschool', 'directus_url', '');
-		$adminToken = $this->config->getAppValue('bytarsschool', 'directus_admin_token', '');
+		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');
@@ -251,13 +271,12 @@ class DirectusUserBackend extends ABackend implements
 
 		return null;
 	}
-
 	/**
 	 * Get users from Directus
 	 */
 	private function getDirectusUsers(string $search = '', ?int $limit = null, ?int $offset = null): array {
-		$directusUrl = $this->config->getAppValue('bytarsschool', 'directus_url', '');
-		$adminToken = $this->config->getAppValue('bytarsschool', 'directus_admin_token', '');
+		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');
@@ -308,13 +327,12 @@ class DirectusUserBackend extends ABackend implements
 
 		return [];
 	}
-
 	/**
 	 * Get user count from Directus
 	 */
 	private function getDirectusUserCount(): int {
-		$directusUrl = $this->config->getAppValue('bytarsschool', 'directus_url', '');
-		$adminToken = $this->config->getAppValue('bytarsschool', 'directus_admin_token', '');
+		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');

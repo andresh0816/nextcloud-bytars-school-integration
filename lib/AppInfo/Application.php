@@ -28,6 +28,9 @@ class Application extends App implements IBootstrap {
 		// Register the settings controller
 		$context->registerController('OCA\BytarsSchool\Controller\SettingsController');
 		
+		// Register admin settings
+		$context->registerSettings('OCA\BytarsSchool\Settings\Admin');
+		
 		// Register event listeners for user provisioning
 		$context->registerEventListener(BeforeUserLoggedInEvent::class, UserProvisioning::class);
 		$context->registerEventListener(UserLoggedInEvent::class, UserProvisioning::class);

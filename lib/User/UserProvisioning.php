@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\BytarsSchool\User;
 
 use Exception;
+use OCA\BytarsSchool\AppInfo\Application;
 use OCA\BytarsSchool\UserBackend\DirectusUserBackend;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -45,10 +46,9 @@ class UserProvisioning implements IEventListener {
 			$this->handleAfterLogin($event);
 		}
 	}
-
 	private function handleBeforeLogin(BeforeUserLoggedInEvent $event): void {
 		$uid = $event->getUid();
-		$autoProvision = $this->config->getAppValue('bytarsschool', 'auto_provision_users', 'false');
+		$autoProvision = $this->config->getAppValue(Application::APP_ID, 'auto_provision_users', 'false');
 		
 		if ($autoProvision === 'true' && !$this->userManager->userExists($uid)) {
 			try {
@@ -61,16 +61,15 @@ class UserProvisioning implements IEventListener {
 
 	private function handleAfterLogin(UserLoggedInEvent $event): void {
 		$user = $event->getUser();
-		$defaultGroup = $this->config->getAppValue('bytarsschool', 'default_group', '');
+		$defaultGroup = $this->config->getAppValue(Application::APP_ID, 'default_group', '');
 		
 		if (!empty($defaultGroup)) {
 			$this->ensureUserInGroup($user, $defaultGroup);
 		}
 	}
-
 	private function createUserFromDirectus(string $uid): void {
-		$directusUrl = $this->config->getAppValue('bytarsschool', 'directus_url', '');
-		$adminToken = $this->config->getAppValue('bytarsschool', 'directus_admin_token', '');
+		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			throw new Exception('Directus configuration incomplete');

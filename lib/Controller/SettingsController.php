@@ -19,20 +19,46 @@ class SettingsController extends Controller {
 		parent::__construct(Application::APP_ID, $request);
 		$this->config = $config;
 	}
-
 	#[AuthorizedAdminSetting(settings: Admin::class)]
-	public function saveSettings(
-		string $directus_url = '',
-		string $directus_admin_token = '',
-		string $auto_provision_users = 'false',
-		string $default_group = ''
-	): DataResponse {
-		$this->config->setAppValue(Application::APP_ID, 'directus_url', $directus_url);
-		$this->config->setAppValue(Application::APP_ID, 'directus_admin_token', $directus_admin_token);
-		$this->config->setAppValue(Application::APP_ID, 'auto_provision_users', $auto_provision_users);
-		$this->config->setAppValue(Application::APP_ID, 'default_group', $default_group);
+	public function saveSettings(): DataResponse {
+		// Get the request data
+		$requestData = json_decode(file_get_contents('php://input'), true);
+		
+		$directusUrl = $requestData['directus_url'] ?? '';
+		$adminToken = $requestData['directus_admin_token'] ?? '';
+		$autoProvision = $requestData['auto_provision_users'] ?? 'false';
+		$defaultGroup = $requestData['default_group'] ?? '';
+		
+		// Convert boolean to string if needed
+		if (is_bool($autoProvision)) {
+			$autoProvision = $autoProvision ? 'true' : 'false';
+		}
+		
+		// Validate required fields
+		if (empty($directusUrl)) {
+			return new DataResponse([
+				'status' => 'error',
+				'message' => 'URL de Directus es requerida'
+			]);
+		}
+		
+		if (empty($adminToken)) {
+			return new DataResponse([
+				'status' => 'error',
+				'message' => 'Token de administrador es requerido'
+			]);
+		}
+		
+		// Save configuration
+		$this->config->setAppValue(Application::APP_ID, 'directus_url', trim($directusUrl, '/'));
+		$this->config->setAppValue(Application::APP_ID, 'directus_admin_token', $adminToken);
+		$this->config->setAppValue(Application::APP_ID, 'auto_provision_users', $autoProvision);
+		$this->config->setAppValue(Application::APP_ID, 'default_group', $defaultGroup);
 
-		return new DataResponse(['status' => 'success']);
+		return new DataResponse([
+			'status' => 'success',
+			'message' => 'Configuración guardada exitosamente'
+		]);
 	}
 	#[AuthorizedAdminSetting(settings: Admin::class)]
 	public function testConnection(): DataResponse {
