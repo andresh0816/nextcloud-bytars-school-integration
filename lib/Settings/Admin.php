@@ -17,6 +17,9 @@ class Admin implements ISettings {
 	}
 
 	public function getForm(): TemplateResponse {
+		// Ensure admin scripts and styles are enqueued
+		Util::addScript(Application::APP_ID, 'admin');
+		Util::addStyle(Application::APP_ID, 'admin');
 		$parameters = [
 			'directus_url' => $this->config->getAppValue(Application::APP_ID, 'directus_url', ''),
 			'directus_admin_token' => $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', ''),

@@ -31,21 +31,20 @@ class Application extends App implements IBootstrap {
 		// Register event listeners for user provisioning
 		$context->registerEventListener(BeforeUserLoggedInEvent::class, UserProvisioning::class);
 		$context->registerEventListener(UserLoggedInEvent::class, UserProvisioning::class);
-		
-		// Register user backend in registration phase
-		$container = $this->getContainer();
-		$config = $container->get(IConfig::class);
-		$directusUrl = $config->getAppValue(self::APP_ID, 'directus_url', '');
-		
-		if (!empty($directusUrl)) {
-			$logger = $container->get(LoggerInterface::class);
-			$userManager = $container->get(IUserManager::class);
-			$directusBackend = new DirectusUserBackend($config, $logger);
-			$userManager->registerBackend($directusBackend);
-		}
 	}
 
 	public function boot(IBootContext $context): void {
-		// Boot logic can be added here if needed
+		$serverContainer = $context->getServerContainer();
+		$config = $serverContainer->get(IConfig::class);
+		$userManager = $serverContainer->get(IUserManager::class);
+		$logger = $serverContainer->get(LoggerInterface::class);
+
+		// Register Directus user backend if configured
+		$directusUrl = $config->getAppValue(self::APP_ID, 'directus_url', '');
+		if (!empty($directusUrl)) {
+			$directusBackend = new DirectusUserBackend($config, $logger);
+			$userManager->registerBackend($directusBackend);
+			$logger->info('Directus user backend registered for BytarsSchool app');
+		}
 	}
 }

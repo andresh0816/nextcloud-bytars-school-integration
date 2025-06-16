@@ -4,6 +4,7 @@ namespace OCA\BytarsSchool\Controller;
 
 use OCA\BytarsSchool\AppInfo\Application;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
 use OCP\IRequest;
@@ -17,41 +18,41 @@ class SettingsController extends Controller {
     }    /**
      * Save admin settings
      */
+    #[NoCSRFRequired]
     public function saveAdmin(): JSONResponse {
-        $data = $this->request->getParams();
-        
+        // Parse JSON body or fallback to parameters
+        $body = $this->request->getBody() ?? '';
+        $data = json_decode($body, true);
+        if (!is_array($data)) {
+            $data = $this->request->getParams();
+        }
         try {
-            if (isset($data['directus_url'])) {
-                $this->config->setAppValue(Application::APP_ID, 'directus_url', $data['directus_url']);
-            }
-            
-            if (isset($data['directus_admin_token'])) {
-                $this->config->setAppValue(Application::APP_ID, 'directus_admin_token', $data['directus_admin_token']);
-            }
-            
-            if (isset($data['default_group'])) {
-                $this->config->setAppValue(Application::APP_ID, 'default_group', $data['default_group']);
-            }
-
-            if (isset($data['auto_provision_users'])) {
-                $this->config->setAppValue(Application::APP_ID, 'auto_provision_users', $data['auto_provision_users'] ? 'true' : 'false');
-            }
+            // Save all settings
+            $this->config->setAppValue(Application::APP_ID, 'directus_url', $data['directus_url'] ?? '');
+            $this->config->setAppValue(Application::APP_ID, 'directus_admin_token', $data['directus_admin_token'] ?? '');
+            $this->config->setAppValue(Application::APP_ID, 'default_group', $data['default_group'] ?? '');
+            $this->config->setAppValue(Application::APP_ID, 'auto_provision_users', !empty($data['auto_provision_users']) ? 'true' : 'false');
 
             return new JSONResponse(['success' => true, 'message' => 'Settings saved successfully']);
         } catch (\Exception $e) {
-            return new JSONResponse([
-                'success' => false,
-                'message' => 'Error saving settings: ' . $e->getMessage()
-            ]);
+            return new JSONResponse(['success' => false, 'message' => 'Error saving settings: ' . $e->getMessage()]);
         }
     }
 
     /**
      * Test connection to Directus
      */
+    #[NoCSRFRequired]
     public function testConnection(): JSONResponse {
-        $directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
-        $adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
+        // Parse JSON body or fallback to parameters
+        $body = $this->request->getBody() ?? '';
+        $bodyData = json_decode($body, true);
+        if (!is_array($bodyData)) {
+            $bodyData = $this->request->getParams();
+        }
+        // Use POSTed values or fallback to saved config
+        $directusUrl = $bodyData['directus_url'] ?? $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+        $adminToken = $bodyData['directus_admin_token'] ?? $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
         if (empty($directusUrl) || empty($adminToken)) {
             return new JSONResponse([
