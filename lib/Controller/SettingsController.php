@@ -34,16 +34,26 @@ class SettingsController extends Controller {
 
 		return new DataResponse(['status' => 'success']);
 	}
-
 	#[AuthorizedAdminSetting(settings: Admin::class)]
 	public function testConnection(): DataResponse {
-		$directusUrl = $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
-		$adminToken = $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
+		// Get the request data for testing (allows testing without saving)
+		$requestData = json_decode(file_get_contents('php://input'), true);
+		
+		$directusUrl = $requestData['directus_url'] ?? $this->config->getAppValue(Application::APP_ID, 'directus_url', '');
+		$adminToken = $requestData['directus_admin_token'] ?? $this->config->getAppValue(Application::APP_ID, 'directus_admin_token', '');
 
 		if (empty($directusUrl) || empty($adminToken)) {
 			return new DataResponse([
 				'status' => 'error',
 				'message' => 'URL de Directus y token de administrador son requeridos'
+			]);
+		}
+
+		// Validate URL format
+		if (!filter_var($directusUrl, FILTER_VALIDATE_URL)) {
+			return new DataResponse([
+				'status' => 'error',
+				'message' => 'La URL de Directus no tiene un formato válido'
 			]);
 		}
 
@@ -56,8 +66,11 @@ class SettingsController extends Controller {
 					'Content-Type: application/json'
 				],
 				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_TIMEOUT => 10,
-				CURLOPT_SSL_VERIFYPEER => false
+				CURLOPT_TIMEOUT => 15,
+				CURLOPT_CONNECTTIMEOUT => 10,
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_FOLLOWLOCATION => true,
+				CURLOPT_USERAGENT => 'Nextcloud Bytars School Integration'
 			]);
 
 			$response = curl_exec($ch);
@@ -66,7 +79,7 @@ class SettingsController extends Controller {
 			curl_close($ch);
 
 			if ($error) {
-				throw new \Exception('Error de cURL: ' . $error);
+				throw new \Exception('Error de conexión cURL: ' . $error);
 			}
 
 			if ($httpCode === 200) {
@@ -74,12 +87,22 @@ class SettingsController extends Controller {
 				return new DataResponse([
 					'status' => 'success',
 					'message' => 'Conexión exitosa con Directus',
-					'user' => $data['data']['email'] ?? 'Usuario desconocido'
+					'user' => $data['data']['email'] ?? 'Usuario administrativo'
+				]);
+			} elseif ($httpCode === 401) {
+				return new DataResponse([
+					'status' => 'error',
+					'message' => 'Token de administrador inválido o expirado'
+				]);
+			} elseif ($httpCode === 404) {
+				return new DataResponse([
+					'status' => 'error',
+					'message' => 'Endpoint no encontrado. Verifique la URL de Directus'
 				]);
 			} else {
 				return new DataResponse([
 					'status' => 'error',
-					'message' => 'Error de autenticación. Código HTTP: ' . $httpCode
+					'message' => 'Error del servidor Directus. Código HTTP: ' . $httpCode
 				]);
 			}
 		} catch (\Exception $e) {
